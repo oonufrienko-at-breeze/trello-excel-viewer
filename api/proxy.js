@@ -4,7 +4,7 @@
 // Usage: GET /api/proxy?url=<trello_attachment_url>&token=<user_trello_token>
 // The API key is stored server-side. The user token comes from t.getRestApi().getToken()
 
-const TRELLO_API_KEY = process.env.TRELLO_API_KEY || 'eaa6d0d7c57218139af1b772bbd777cb';
+const TRELLO_API_KEY = process.env.TRELLO_API_KEY || process.env.TRELLO_APP_KEY || '';
 
 export default async function handler(req, res) {
   // CORS headers — allow requests from GitHub Pages

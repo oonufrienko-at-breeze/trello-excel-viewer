@@ -4,7 +4,7 @@
 //   1. CORS issues calling api.trello.com from GitHub Pages
 //   2. Corrupted/truncated URLs passed through Power-Up modal args
 
-const TRELLO_API_KEY = process.env.TRELLO_API_KEY || 'eaa6d0d7c57218139af1b772bbd777cb';
+const TRELLO_API_KEY = process.env.TRELLO_API_KEY || process.env.TRELLO_APP_KEY || '';
 
 // Hobby plan caps serverless functions at 10s — we need internal timeouts below that
 const META_TIMEOUT_MS = 6000;
