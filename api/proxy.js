@@ -53,25 +53,36 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
-    // Build headers for Trello API authentication
-    const headers = {
-      'User-Agent': 'TrelloExcelPreview/1.0',
-    };
+  // Build headers for Trello API authentication. Only attach the OAuth
+  // header for api.trello.com — for S3 attachment URLs the OAuth header
+  // is rejected by AWS and breaks the request.
+  const isApiTrello = parsedUrl.hostname === 'api.trello.com' ||
+                      parsedUrl.hostname === 'trello.com';
 
-    // If token is provided, use Authorization header for Trello API
-    if (token) {
-      headers['Authorization'] = `OAuth oauth_consumer_key="${TRELLO_API_KEY}", oauth_token="${token}"`;
+  async function tryFetch(withAuth) {
+    const headers = { 'User-Agent': 'TrelloExcelPreview/1.0' };
+    if (withAuth && token && isApiTrello && TRELLO_API_KEY) {
+      headers['Authorization'] =
+        `OAuth oauth_consumer_key="${TRELLO_API_KEY}", oauth_token="${token}"`;
+    }
+    return fetch(url, { headers, redirect: 'follow' });
+  }
+
+  try {
+    let response = await tryFetch(true);
+
+    // If auth failed, retry once without the OAuth header — works for
+    // public boards / direct S3 URLs where the header was the problem.
+    if (!response.ok && (response.status === 401 || response.status === 403)) {
+      const retry = await tryFetch(false);
+      if (retry.ok) response = retry;
     }
 
-    const response = await fetch(url, {
-      headers,
-      redirect: 'follow',
-    });
-
     if (!response.ok) {
+      const errBody = await response.text().catch(() => '');
       return res.status(response.status).json({
         error: `Upstream error: ${response.status} ${response.statusText}`,
+        details: errBody.slice(0, 300),
       });
     }
 
